@@ -1,0 +1,31 @@
+ListenAddress = "127.0.0.1:8083"
+RPCToken = "8e24a40a-7f13-469d-8141-e5a81df7b629"
+EnablePlayground = true
+TimeOut = 6
+Salt = "6aff45ff-1ffd-473d-9693-f21d8ab84b85"
+
+
+[JWTConfiguration]
+SecretKey = "e31ce15c-5315-44eb-8a8f-a272924c03fd"
+OperationKey = "6aff45ff-1ffd-473d-9693-f21d8ab84b85"
+
+
+[PostgresConfiguration]
+Host = "127.0.0.1"
+Port = 5432
+User = "root"
+Password = "root"
+DBName = "eim"
+
+[RedisConfiguration]
+Addr = "127.0.0.1:6379"
+DB = 0
+Password = "root"
+
+[ETCDConfiguration]
+Endpoints = [
+    "127.0.0.1:2379"
+]
+
+[LoggerConfig]
+Filename = "eim-log.log"

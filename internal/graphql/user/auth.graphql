@@ -1,0 +1,51 @@
+extend type Query {
+    user: UserInformation @hasLogined
+    captcha: Captcha
+}
+
+extend type Mutation {
+    loginByPassword(input: LoginByPassword): AuthPayload
+    registry(input: Registry): MaybeBool
+    chatGPT(input: ChatGPTData): ChatGPTResp
+}
+
+input ChatGPTData {
+    message: String!
+}
+
+type ChatGPTResp {
+    message: String!
+}
+
+input Registry {
+    captchaID: String!
+    captchaCode: String!
+    account: String!
+    name: String!
+    password: String!
+}
+
+input LoginByPassword {
+    captchaID: String!
+    captchaCode: String!
+    account: String!
+    password: String!
+}
+
+type Captcha {
+    base64Captcha: String!
+    captchaId: String!
+}
+
+type UserInformation {
+    accountId: String!
+    role: Role!
+    account: String!
+    accountName: String!
+}
+
+# user roles
+enum Role {
+    GeneralUser
+    Admin
+}

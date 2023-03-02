@@ -1,0 +1,58 @@
+# To generate code according to this configuration file, under the configs/ directory,
+# run the following commands:
+#
+# rm ../internal/generated/resolver.go
+# go run github.com/99designs/gqlgen -v
+
+# Locations of graphql schema, should add to the following list for new definitions
+schema:
+  - ./internal/graphql/**/*.graphql
+
+skip_validation: true
+
+# Locations of generated files
+exec:
+  filename: ./internal/generated/generated.go
+resolver:
+  filename: ./internal/generated/resolver.go
+  type: Resolver
+model:
+  filename: ./internal/generated/models_gen.go
+models:
+  # Essential Types
+  Int32:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.Int32
+  Int64:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.Int64
+  Float32:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.Float32
+  MaybeString:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeString
+  MaybeFloat64:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeFloat64
+  MaybeFloat32:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeFloat32
+  MaybeBool:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeBool
+  MaybeInt32:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeInt32
+  MaybeInt64:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.MaybeInt64
+  Timestamp:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.Timestamp
+  StringMap:
+    model:
+      - github.com/dollarkillerx/common/pkg/gql.StringMap
+
+# Other configs
+omit_slice_element_pointers: true
