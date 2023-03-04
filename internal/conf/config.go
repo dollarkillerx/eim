@@ -11,6 +11,7 @@ var CONFIG Configuration
 type Configuration struct {
 	ListenAddress    string
 	RPCToken         string
+	Debug            bool
 	EnablePlayground bool
 	JWTConfiguration JWTConfiguration
 	TimeOut          int

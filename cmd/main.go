@@ -38,6 +38,10 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Use(middlewares.Cors())
+	if !conf.CONFIG.EnablePlayground {
+		router.Use(middlewares.Safety())
+	}
+
 	router.Use(middlewares.Context())
 
 	router.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {

@@ -6,20 +6,9 @@ extend type Query {
 extend type Mutation {
     loginByPassword(input: LoginByPassword): AuthPayload
     registry(input: Registry): MaybeBool
-    chatGPT(input: ChatGPTData): ChatGPTResp
-}
-
-input ChatGPTData {
-    message: String!
-}
-
-type ChatGPTResp {
-    message: String!
 }
 
 input Registry {
-    captchaID: String!
-    captchaCode: String!
     account: String!
     name: String!
     password: String!
