@@ -3,12 +3,20 @@ package resolvers
 import (
 	"context"
 	"image/color"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/afocus/captcha"
 	"github.com/dollarkillerx/eim/internal/generated"
 	"github.com/dollarkillerx/eim/internal/storage"
+	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -72,3 +80,37 @@ func (r *queryResolver) Now(ctx context.Context) (*timestamppb.Timestamp, error)
 
 // field resolver
 type fileInfoResolver struct{ *Resolver }
+
+// UploadFile ...
+func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) (string, error) {
+	// 检查上传的文件是否符合要求
+	maxSize := int64(8 * 1024 * 1024) // 8MB
+	if file.Size > maxSize {
+		return "", errors.New("file size too large")
+	}
+
+	// 生成新的文件名
+	extension := filepath.Ext(file.Filename)
+	uuid := uuid.New().String()
+	newFileName := uuid + extension
+
+	// 打开文件，准备写入
+	targetFile, err := os.OpenFile("./static/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return "", err
+	}
+	defer targetFile.Close()
+
+	// 从上传的文件中读取数据，并写入到打开的文件中
+	fileData, err := ioutil.ReadAll(file.File)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(targetFile, strings.NewReader(string(fileData)))
+	if err != nil {
+		return "", err
+	}
+
+	// 返回新的文件名
+	return newFileName, nil
+}

@@ -6,6 +6,7 @@ type Query {
 
 type Mutation {
     healthcheck: String!
+    uploadFile(file: Upload!): String!
 }
 
 directive @hasLogined on FIELD_DEFINITION
@@ -16,6 +17,7 @@ type AuthPayload {
     userID: String!
 }
 
+scalar Upload
 scalar MaybeFloat64
 scalar MaybeFloat32
 scalar MaybeString

@@ -44,6 +44,8 @@ func main() {
 
 	router.Use(middlewares.Context())
 
+	router.Handle("/static/*", http.StripPrefix("/static", http.FileServer(http.Dir("static"))))
+
 	router.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ack"))
 	})

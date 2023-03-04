@@ -5,6 +5,7 @@ package generated
 import (
 	"context"
 
+	"github.com/99designs/gqlgen/graphql"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -12,6 +13,11 @@ type Resolver struct{}
 
 // // foo
 func (r *mutationResolver) Healthcheck(ctx context.Context) (string, error) {
+	panic("not implemented")
+}
+
+// // foo
+func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) (string, error) {
 	panic("not implemented")
 }
 
