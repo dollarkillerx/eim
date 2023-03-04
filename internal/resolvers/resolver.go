@@ -14,9 +14,9 @@ import (
 	"github.com/afocus/captcha"
 	"github.com/dollarkillerx/eim/internal/generated"
 	"github.com/dollarkillerx/eim/internal/storage"
-	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"github.com/rs/xid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -90,9 +90,7 @@ func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) 
 	}
 
 	// 生成新的文件名
-	extension := filepath.Ext(file.Filename)
-	uuid := uuid.New().String()
-	newFileName := uuid + extension
+	newFileName := xid.New().String() + filepath.Ext(file.Filename)
 
 	// 打开文件，准备写入
 	targetFile, err := os.OpenFile("./static/"+newFileName, os.O_WRONLY|os.O_CREATE, 0666)
