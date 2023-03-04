@@ -1,20 +1,16 @@
-package utils
+package test
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
-	"net/http"
 	"strconv"
+	"testing"
 	"time"
 )
 
-func GetDefaultHttpClient(timeout int) *http.Client {
-	if timeout == 0 {
-		timeout = 3
-	}
-	return &http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
-	}
+func TestTp(t *testing.T) {
+	fmt.Println(GenerateRandNum(4))
 }
 
 func GenerateRandNum(digits int) string {

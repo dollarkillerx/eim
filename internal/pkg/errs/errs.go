@@ -25,6 +25,10 @@ var (
 		Code:    "40001",
 		Message: "400 wrong form",
 	}
+	SendSmsPleaseWait = &Error{
+		Code:    "40002",
+		Message: "SMS has been sent, please wait",
+	}
 	CaptchaCode = &Error{
 		Code:    "4008",
 		Message: "Incorrect verification code or expired",

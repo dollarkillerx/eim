@@ -22,9 +22,7 @@ func (s *Simple) AccountRegistry(account string, name string, password string, r
 	err := s.DB().Model(&models.User{}).Create(&models.User{
 		BasicModel: models.BasicModel{ID: xid.New().String()},
 		Account:    account,
-		Name:       name,
 		Password:   password,
-		Role:       role,
 	}).Error
 	if err != nil {
 		return errors.WithStack(err)

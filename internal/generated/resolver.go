@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type Resolver struct{}
@@ -17,17 +16,7 @@ func (r *mutationResolver) Healthcheck(ctx context.Context) (string, error) {
 }
 
 // // foo
-func (r *mutationResolver) LoginByPassword(ctx context.Context, input *LoginByPassword) (*AuthPayload, error) {
-	panic("not implemented")
-}
-
-// // foo
-func (r *mutationResolver) Registry(ctx context.Context, input *Registry) (*wrapperspb.BoolValue, error) {
-	panic("not implemented")
-}
-
-// // foo
-func (r *mutationResolver) ChatGpt(ctx context.Context, input *ChatGPTData) (*ChatGPTResp, error) {
+func (r *mutationResolver) SendSms(ctx context.Context, input *PhoneInput) (*Sms, error) {
 	panic("not implemented")
 }
 
@@ -43,6 +32,11 @@ func (r *queryResolver) Now(ctx context.Context) (*timestamppb.Timestamp, error)
 
 // // foo
 func (r *queryResolver) User(ctx context.Context) (*UserInformation, error) {
+	panic("not implemented")
+}
+
+// // foo
+func (r *queryResolver) CheckSms(ctx context.Context, smsID string, smsCode string) (*CheckSms, error) {
 	panic("not implemented")
 }
 

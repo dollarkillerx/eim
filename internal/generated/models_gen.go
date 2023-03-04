@@ -18,27 +18,16 @@ type Captcha struct {
 	CaptchaID     string `json:"captchaId"`
 }
 
-type ChatGPTData struct {
-	Message string `json:"message"`
+type CheckSms struct {
+	Ok bool `json:"ok"`
 }
 
-type ChatGPTResp struct {
-	Message string `json:"message"`
+type PhoneInput struct {
+	PhoneNumber string `json:"phoneNumber"`
 }
 
-type LoginByPassword struct {
-	CaptchaID   string `json:"captchaID"`
-	CaptchaCode string `json:"captchaCode"`
-	Account     string `json:"account"`
-	Password    string `json:"password"`
-}
-
-type Registry struct {
-	CaptchaID   string `json:"captchaID"`
-	CaptchaCode string `json:"captchaCode"`
-	Account     string `json:"account"`
-	Name        string `json:"name"`
-	Password    string `json:"password"`
+type Sms struct {
+	SmsID string `json:"smsId"`
 }
 
 type UserInformation struct {

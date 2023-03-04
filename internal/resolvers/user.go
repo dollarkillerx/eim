@@ -2,61 +2,56 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/dollarkillerx/eim/internal/conf"
 	"github.com/dollarkillerx/eim/internal/generated"
-	"github.com/dollarkillerx/eim/internal/pkg/enum"
 	"github.com/dollarkillerx/eim/internal/pkg/errs"
 	"github.com/dollarkillerx/eim/internal/utils"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"github.com/rs/xid"
 )
 
-func (r *mutationResolver) LoginByPassword(ctx context.Context, input *generated.LoginByPassword) (*generated.AuthPayload, error) {
-	captchaOK := utils.CheckImgCaptcha(r.cache, input.CaptchaID, input.CaptchaCode)
-	if !captchaOK {
-		return nil, errs.CaptchaCode
+// SendSms ...
+func (r *mutationResolver) SendSms(ctx context.Context, input *generated.PhoneInput) (*generated.Sms, error) {
+	_, ex := r.cache.Get(input.PhoneNumber)
+	if ex {
+		return nil, errs.SendSmsPleaseWait
 	}
 
-	account, err := r.Storage.GetUserByAccount(input.Account)
-	if err != nil {
-		return nil, errs.LoginFailed
-	}
+	smsID := xid.New().String()
+	code := utils.GenerateRandNum(4)
 
-	if account.Password != utils.GetPassword(input.Password, conf.CONFIG.Salt) {
-		return nil, errs.LoginFailed
-	}
+	r.cache.Set(smsID, code, time.Second*60)
+	r.cache.Set(input.PhoneNumber, code, time.Second*60)
 
-	token, err := utils.JWT.CreateToken(enum.AuthJWT{
-		generated.UserInformation{
-			Account:     account.Account,
-			Role:        account.Role,
-			AccountID:   account.ID,
-			AccountName: account.Name,
-		},
-	}, time.Now().Add(time.Hour*24*7).Unix())
-	if err != nil {
-		return nil, errs.SystemError(err)
-	}
-
-	return &generated.AuthPayload{
-		AccessTokenString: token,
-		UserID:            account.ID,
+	log.Printf("SendSMS %s %s \n", input.PhoneNumber, code)
+	return &generated.Sms{
+		SmsID: smsID,
 	}, nil
 }
 
-func (r *mutationResolver) Registry(ctx context.Context, input *generated.Registry) (*wrapperspb.BoolValue, error) {
-	captchaOK := utils.CheckImgCaptcha(r.cache, input.CaptchaID, input.CaptchaCode)
-	if !captchaOK {
-		return nil, errs.CaptchaCode
+// CheckSms ...
+func (r *queryResolver) CheckSms(ctx context.Context, smsID string, smsCode string) (*generated.CheckSms, error) {
+	rc, ex := r.cache.Get(smsID)
+	if !ex {
+		return &generated.CheckSms{
+			Ok: false,
+		}, nil
+	}
+	code := rc.(string)
+
+	fmt.Printf("%s %s %s %v\n", smsID, smsCode, code, smsCode == code)
+
+	if smsCode != code {
+		return &generated.CheckSms{
+			Ok: false,
+		}, nil
 	}
 
-	err := r.Storage.AccountRegistry(input.Account, input.Name, utils.GetPassword(input.Password, conf.CONFIG.Salt), generated.RoleGeneralUser)
-	if err != nil {
-		return nil, errs.SystemError(err)
-	}
-
-	return &wrapperspb.BoolValue{Value: true}, nil
+	return &generated.CheckSms{
+		Ok: true,
+	}, nil
 }
 
 func (r *queryResolver) User(ctx context.Context) (*generated.UserInformation, error) {

@@ -16,7 +16,6 @@ import (
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // region    ************************** generated!.gotpl **************************
@@ -57,22 +56,25 @@ type ComplexityRoot struct {
 		CaptchaID     func(childComplexity int) int
 	}
 
-	ChatGPTResp struct {
-		Message func(childComplexity int) int
+	CheckSMS struct {
+		Ok func(childComplexity int) int
 	}
 
 	Mutation struct {
-		ChatGpt         func(childComplexity int, input *ChatGPTData) int
-		Healthcheck     func(childComplexity int) int
-		LoginByPassword func(childComplexity int, input *LoginByPassword) int
-		Registry        func(childComplexity int, input *Registry) int
+		Healthcheck func(childComplexity int) int
+		SendSms     func(childComplexity int, input *PhoneInput) int
 	}
 
 	Query struct {
 		Captcha     func(childComplexity int) int
+		CheckSms    func(childComplexity int, smsID string, smsCode string) int
 		Healthcheck func(childComplexity int) int
 		Now         func(childComplexity int) int
 		User        func(childComplexity int) int
+	}
+
+	SMS struct {
+		SmsID func(childComplexity int) int
 	}
 
 	UserInformation struct {
@@ -85,14 +87,13 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	Healthcheck(ctx context.Context) (string, error)
-	LoginByPassword(ctx context.Context, input *LoginByPassword) (*AuthPayload, error)
-	Registry(ctx context.Context, input *Registry) (*wrapperspb.BoolValue, error)
-	ChatGpt(ctx context.Context, input *ChatGPTData) (*ChatGPTResp, error)
+	SendSms(ctx context.Context, input *PhoneInput) (*Sms, error)
 }
 type QueryResolver interface {
 	Healthcheck(ctx context.Context) (string, error)
 	Now(ctx context.Context) (*timestamppb.Timestamp, error)
 	User(ctx context.Context) (*UserInformation, error)
+	CheckSms(ctx context.Context, smsID string, smsCode string) (*CheckSms, error)
 	Captcha(ctx context.Context) (*Captcha, error)
 }
 
@@ -139,24 +140,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Captcha.CaptchaID(childComplexity), true
 
-	case "ChatGPTResp.message":
-		if e.complexity.ChatGPTResp.Message == nil {
+	case "CheckSMS.ok":
+		if e.complexity.CheckSMS.Ok == nil {
 			break
 		}
 
-		return e.complexity.ChatGPTResp.Message(childComplexity), true
-
-	case "Mutation.chatGPT":
-		if e.complexity.Mutation.ChatGpt == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_chatGPT_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.ChatGpt(childComplexity, args["input"].(*ChatGPTData)), true
+		return e.complexity.CheckSMS.Ok(childComplexity), true
 
 	case "Mutation.healthcheck":
 		if e.complexity.Mutation.Healthcheck == nil {
@@ -165,29 +154,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Healthcheck(childComplexity), true
 
-	case "Mutation.loginByPassword":
-		if e.complexity.Mutation.LoginByPassword == nil {
+	case "Mutation.sendSMS":
+		if e.complexity.Mutation.SendSms == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_loginByPassword_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_sendSMS_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.LoginByPassword(childComplexity, args["input"].(*LoginByPassword)), true
-
-	case "Mutation.registry":
-		if e.complexity.Mutation.Registry == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_registry_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Registry(childComplexity, args["input"].(*Registry)), true
+		return e.complexity.Mutation.SendSms(childComplexity, args["input"].(*PhoneInput)), true
 
 	case "Query.captcha":
 		if e.complexity.Query.Captcha == nil {
@@ -195,6 +172,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Captcha(childComplexity), true
+
+	case "Query.checkSMS":
+		if e.complexity.Query.CheckSms == nil {
+			break
+		}
+
+		args, err := ec.field_Query_checkSMS_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CheckSms(childComplexity, args["smsId"].(string), args["smsCode"].(string)), true
 
 	case "Query.healthcheck":
 		if e.complexity.Query.Healthcheck == nil {
@@ -216,6 +205,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity), true
+
+	case "SMS.smsId":
+		if e.complexity.SMS.SmsID == nil {
+			break
+		}
+
+		return e.complexity.SMS.SmsID(childComplexity), true
 
 	case "UserInformation.account":
 		if e.complexity.UserInformation.Account == nil {
@@ -253,9 +249,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputChatGPTData,
-		ec.unmarshalInputLoginByPassword,
-		ec.unmarshalInputRegistry,
+		ec.unmarshalInputPhoneInput,
 	)
 	first := true
 
@@ -349,36 +343,24 @@ scalar StringMap
 scalar Any`, BuiltIn: false},
 	{Name: "../graphql/user/auth.graphql", Input: `extend type Query {
     user: UserInformation @hasLogined
+    checkSMS(smsId: String!, smsCode: String!): CheckSMS! # 检测code是否正确
     captcha: Captcha
 }
 
 extend type Mutation {
-    loginByPassword(input: LoginByPassword): AuthPayload
-    registry(input: Registry): MaybeBool
-    chatGPT(input: ChatGPTData): ChatGPTResp
+    sendSMS(input: PhoneInput): SMS # send sms
 }
 
-input ChatGPTData {
-    message: String!
+input PhoneInput {
+    phoneNumber: String!
 }
 
-type ChatGPTResp {
-    message: String!
+type SMS {
+    smsId: String!
 }
 
-input Registry {
-    captchaID: String!
-    captchaCode: String!
-    account: String!
-    name: String!
-    password: String!
-}
-
-input LoginByPassword {
-    captchaID: String!
-    captchaCode: String!
-    account: String!
-    password: String!
+type CheckSMS {
+    ok: Boolean!
 }
 
 type Captcha {
@@ -405,43 +387,13 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_chatGPT_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_sendSMS_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *ChatGPTData
+	var arg0 *PhoneInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOChatGPTData2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐChatGPTData(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_loginByPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *LoginByPassword
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOLoginByPassword2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐLoginByPassword(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_registry_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *Registry
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalORegistry2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐRegistry(ctx, tmp)
+		arg0, err = ec.unmarshalOPhoneInput2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐPhoneInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -462,6 +414,30 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_checkSMS_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["smsId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsId"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["smsId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["smsCode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsCode"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["smsCode"] = arg1
 	return args, nil
 }
 
@@ -679,8 +655,8 @@ func (ec *executionContext) fieldContext_Captcha_captchaId(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _ChatGPTResp_message(ctx context.Context, field graphql.CollectedField, obj *ChatGPTResp) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ChatGPTResp_message(ctx, field)
+func (ec *executionContext) _CheckSMS_ok(ctx context.Context, field graphql.CollectedField, obj *CheckSms) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CheckSMS_ok(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -693,7 +669,7 @@ func (ec *executionContext) _ChatGPTResp_message(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
+		return obj.Ok, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -705,19 +681,19 @@ func (ec *executionContext) _ChatGPTResp_message(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ChatGPTResp_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_CheckSMS_ok(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "ChatGPTResp",
+		Object:     "CheckSMS",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -766,8 +742,8 @@ func (ec *executionContext) fieldContext_Mutation_healthcheck(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_loginByPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_loginByPassword(ctx, field)
+func (ec *executionContext) _Mutation_sendSMS(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_sendSMS(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -780,7 +756,7 @@ func (ec *executionContext) _Mutation_loginByPassword(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().LoginByPassword(rctx, fc.Args["input"].(*LoginByPassword))
+		return ec.resolvers.Mutation().SendSms(rctx, fc.Args["input"].(*PhoneInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -788,12 +764,12 @@ func (ec *executionContext) _Mutation_loginByPassword(ctx context.Context, field
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*AuthPayload)
+	res := resTmp.(*Sms)
 	fc.Result = res
-	return ec.marshalOAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx, field.Selections, res)
+	return ec.marshalOSMS2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐSms(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_loginByPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_sendSMS(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -801,12 +777,10 @@ func (ec *executionContext) fieldContext_Mutation_loginByPassword(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "accessTokenString":
-				return ec.fieldContext_AuthPayload_accessTokenString(ctx, field)
-			case "userID":
-				return ec.fieldContext_AuthPayload_userID(ctx, field)
+			case "smsId":
+				return ec.fieldContext_SMS_smsId(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SMS", field.Name)
 		},
 	}
 	defer func() {
@@ -816,113 +790,7 @@ func (ec *executionContext) fieldContext_Mutation_loginByPassword(ctx context.Co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_loginByPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_registry(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_registry(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Registry(rctx, fc.Args["input"].(*Registry))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*wrapperspb.BoolValue)
-	fc.Result = res
-	return ec.marshalOMaybeBool2ᚖgoogleᚗgolangᚗorgᚋprotobufᚋtypesᚋknownᚋwrapperspbᚐBoolValue(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_registry(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type MaybeBool does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_registry_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_chatGPT(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_chatGPT(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChatGpt(rctx, fc.Args["input"].(*ChatGPTData))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ChatGPTResp)
-	fc.Result = res
-	return ec.marshalOChatGPTResp2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐChatGPTResp(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_chatGPT(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "message":
-				return ec.fieldContext_ChatGPTResp_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ChatGPTResp", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_chatGPT_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_sendSMS_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -1081,6 +949,64 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserInformation", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_checkSMS(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_checkSMS(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CheckSms(rctx, fc.Args["smsId"].(string), fc.Args["smsCode"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*CheckSms)
+	fc.Result = res
+	return ec.marshalNCheckSMS2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐCheckSms(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_checkSMS(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ok":
+				return ec.fieldContext_CheckSMS_ok(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CheckSMS", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_checkSMS_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -1253,6 +1179,50 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SMS_smsId(ctx context.Context, field graphql.CollectedField, obj *Sms) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SMS_smsId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SmsID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SMS_smsId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SMS",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3207,137 +3177,25 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputChatGPTData(ctx context.Context, obj interface{}) (ChatGPTData, error) {
-	var it ChatGPTData
+func (ec *executionContext) unmarshalInputPhoneInput(ctx context.Context, obj interface{}) (PhoneInput, error) {
+	var it PhoneInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"message"}
+	fieldsInOrder := [...]string{"phoneNumber"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "message":
+		case "phoneNumber":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
-			it.Message, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputLoginByPassword(ctx context.Context, obj interface{}) (LoginByPassword, error) {
-	var it LoginByPassword
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"captchaID", "captchaCode", "account", "password"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "captchaID":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("captchaID"))
-			it.CaptchaID, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "captchaCode":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("captchaCode"))
-			it.CaptchaCode, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "account":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account"))
-			it.Account, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputRegistry(ctx context.Context, obj interface{}) (Registry, error) {
-	var it Registry
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"captchaID", "captchaCode", "account", "name", "password"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "captchaID":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("captchaID"))
-			it.CaptchaID, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "captchaCode":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("captchaCode"))
-			it.CaptchaCode, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "account":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account"))
-			it.Account, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phoneNumber"))
+			it.PhoneNumber, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3425,19 +3283,19 @@ func (ec *executionContext) _Captcha(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
-var chatGPTRespImplementors = []string{"ChatGPTResp"}
+var checkSMSImplementors = []string{"CheckSMS"}
 
-func (ec *executionContext) _ChatGPTResp(ctx context.Context, sel ast.SelectionSet, obj *ChatGPTResp) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, chatGPTRespImplementors)
+func (ec *executionContext) _CheckSMS(ctx context.Context, sel ast.SelectionSet, obj *CheckSms) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, checkSMSImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("ChatGPTResp")
-		case "message":
+			out.Values[i] = graphql.MarshalString("CheckSMS")
+		case "ok":
 
-			out.Values[i] = ec._ChatGPTResp_message(ctx, field, obj)
+			out.Values[i] = ec._CheckSMS_ok(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3477,22 +3335,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_healthcheck(ctx, field)
 			})
 
-		case "loginByPassword":
+		case "sendSMS":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_loginByPassword(ctx, field)
-			})
-
-		case "registry":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_registry(ctx, field)
-			})
-
-		case "chatGPT":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_chatGPT(ctx, field)
+				return ec._Mutation_sendSMS(ctx, field)
 			})
 
 		default:
@@ -3581,6 +3427,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "checkSMS":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_checkSMS(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "captcha":
 			field := field
 
@@ -3618,6 +3484,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		}
 	}
 	out.Dispatch()
+	return out
+}
+
+var sMSImplementors = []string{"SMS"}
+
+func (ec *executionContext) _SMS(ctx context.Context, sel ast.SelectionSet, obj *Sms) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sMSImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SMS")
+		case "smsId":
+
+			out.Values[i] = ec._SMS_smsId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
 	return out
 }
 
@@ -4003,6 +3897,20 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCheckSMS2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐCheckSms(ctx context.Context, sel ast.SelectionSet, v CheckSms) graphql.Marshaler {
+	return ec._CheckSMS(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCheckSMS2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐCheckSms(ctx context.Context, sel ast.SelectionSet, v *CheckSms) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CheckSMS(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRole2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐRole(ctx context.Context, v interface{}) (Role, error) {
 	var res Role
 	err := res.UnmarshalGQL(v)
@@ -4317,13 +4225,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *AuthPayload) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AuthPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4357,51 +4258,19 @@ func (ec *executionContext) marshalOCaptcha2ᚖgithubᚗcomᚋdollarkillerxᚋei
 	return ec._Captcha(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOChatGPTData2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐChatGPTData(ctx context.Context, v interface{}) (*ChatGPTData, error) {
+func (ec *executionContext) unmarshalOPhoneInput2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐPhoneInput(ctx context.Context, v interface{}) (*PhoneInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalInputChatGPTData(ctx, v)
+	res, err := ec.unmarshalInputPhoneInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOChatGPTResp2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐChatGPTResp(ctx context.Context, sel ast.SelectionSet, v *ChatGPTResp) graphql.Marshaler {
+func (ec *executionContext) marshalOSMS2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐSms(ctx context.Context, sel ast.SelectionSet, v *Sms) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._ChatGPTResp(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOLoginByPassword2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐLoginByPassword(ctx context.Context, v interface{}) (*LoginByPassword, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputLoginByPassword(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOMaybeBool2ᚖgoogleᚗgolangᚗorgᚋprotobufᚋtypesᚋknownᚋwrapperspbᚐBoolValue(ctx context.Context, v interface{}) (*wrapperspb.BoolValue, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := gql.UnmarshalMaybeBool(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOMaybeBool2ᚖgoogleᚗgolangᚗorgᚋprotobufᚋtypesᚋknownᚋwrapperspbᚐBoolValue(ctx context.Context, sel ast.SelectionSet, v *wrapperspb.BoolValue) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := gql.MarshalMaybeBool(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalORegistry2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐRegistry(ctx context.Context, v interface{}) (*Registry, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputRegistry(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	return ec._SMS(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
