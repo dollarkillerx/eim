@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 )
 
 func UploadFile(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("in")
 	// 解析表单域限制文件大小为 8MB
 	r.ParseMultipartForm(8 << 20)
 
