@@ -529,7 +529,7 @@ scalar Any`, BuiltIn: false},
 }
 
 type Friendships {
-    friendships: [Friendships!]!
+    friendships: [Friendship!]!
 }
 
 type Friendship {
@@ -1344,9 +1344,9 @@ func (ec *executionContext) _Friendships_friendships(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]Friendships)
+	res := resTmp.([]Friendship)
 	fc.Result = res
-	return ec.marshalNFriendships2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipsᚄ(ctx, field.Selections, res)
+	return ec.marshalNFriendship2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Friendships_friendships(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1357,10 +1357,24 @@ func (ec *executionContext) fieldContext_Friendships_friendships(ctx context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "friendships":
-				return ec.fieldContext_Friendships_friendships(ctx, field)
+			case "accountId":
+				return ec.fieldContext_Friendship_accountId(ctx, field)
+			case "account":
+				return ec.fieldContext_Friendship_account(ctx, field)
+			case "fullName":
+				return ec.fieldContext_Friendship_fullName(ctx, field)
+			case "nickName":
+				return ec.fieldContext_Friendship_nickName(ctx, field)
+			case "birthday":
+				return ec.fieldContext_Friendship_birthday(ctx, field)
+			case "email":
+				return ec.fieldContext_Friendship_email(ctx, field)
+			case "about":
+				return ec.fieldContext_Friendship_about(ctx, field)
+			case "avatar":
+				return ec.fieldContext_Friendship_avatar(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Friendships", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Friendship", field.Name)
 		},
 	}
 	return fc, nil
@@ -5335,11 +5349,11 @@ func (ec *executionContext) marshalNCheckSMS2ᚖgithubᚗcomᚋdollarkillerxᚋe
 	return ec._CheckSMS(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFriendships2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendships(ctx context.Context, sel ast.SelectionSet, v Friendships) graphql.Marshaler {
-	return ec._Friendships(ctx, sel, &v)
+func (ec *executionContext) marshalNFriendship2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendship(ctx context.Context, sel ast.SelectionSet, v Friendship) graphql.Marshaler {
+	return ec._Friendship(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFriendships2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipsᚄ(ctx context.Context, sel ast.SelectionSet, v []Friendships) graphql.Marshaler {
+func (ec *executionContext) marshalNFriendship2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipᚄ(ctx context.Context, sel ast.SelectionSet, v []Friendship) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5363,7 +5377,7 @@ func (ec *executionContext) marshalNFriendships2ᚕgithubᚗcomᚋdollarkillerx�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNFriendships2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendships(ctx, sel, v[i])
+			ret[i] = ec.marshalNFriendship2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendship(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5381,6 +5395,10 @@ func (ec *executionContext) marshalNFriendships2ᚕgithubᚗcomᚋdollarkillerx�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNFriendships2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendships(ctx context.Context, sel ast.SelectionSet, v Friendships) graphql.Marshaler {
+	return ec._Friendships(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNFriendships2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendships(ctx context.Context, sel ast.SelectionSet, v *Friendships) graphql.Marshaler {

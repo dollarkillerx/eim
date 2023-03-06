@@ -23,6 +23,7 @@ func NewSimple(config conf.PostgresConfiguration) (*Simple, error) {
 
 	postgresClient.AutoMigrate(
 		&models.User{},
+		&models.Friendship{},
 	)
 
 	return &Simple{

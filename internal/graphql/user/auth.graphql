@@ -6,21 +6,6 @@ extend type Query {
     friendship: Friendships! # 我的朋友
 }
 
-type Friendships {
-    friendships: [Friendships!]!
-}
-
-type Friendship {
-    accountId: String!
-    account: String!
-    fullName: String!
-    nickName: String!
-    birthday: String!
-    email: String!
-    about: String!
-    avatar: String!
-}
-
 extend type Mutation {
     sendSMS(input: PhoneInput): SMS # send sms
     userRegistration(input: UserRegistration): AuthPayload # 用户注册
@@ -70,4 +55,19 @@ type UserInformation {
 enum Role {
     GeneralUser
     Admin
+}
+
+type Friendships {
+    friendships: [Friendship!]!
+}
+
+type Friendship {
+    accountId: String!
+    account: String!
+    fullName: String!
+    nickName: String!
+    birthday: String!
+    email: String!
+    about: String!
+    avatar: String!
 }

@@ -1,4 +1,5 @@
 ListenAddress = "127.0.0.1:8083"
+AssetUri="http://127.0.0.1:8083/static/"
 RPCToken = "8e24a40a-7f13-469d-8141-e5a81df7b629"
 EnablePlayground = true
 TimeOut = 6

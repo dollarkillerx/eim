@@ -34,7 +34,7 @@ type Friendship struct {
 }
 
 type Friendships struct {
-	Friendships []Friendships `json:"friendships"`
+	Friendships []Friendship `json:"friendships"`
 }
 
 type PhoneInput struct {

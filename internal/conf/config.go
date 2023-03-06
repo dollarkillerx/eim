@@ -10,6 +10,7 @@ var CONFIG Configuration
 // Configuration ...
 type Configuration struct {
 	ListenAddress    string
+	AssetUri         string
 	RPCToken         string
 	Debug            bool
 	EnablePlayground bool

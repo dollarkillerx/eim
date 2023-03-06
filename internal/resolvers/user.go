@@ -2,9 +2,11 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/dollarkillerx/eim/internal/conf"
 	"github.com/dollarkillerx/eim/internal/generated"
 	"github.com/dollarkillerx/eim/internal/pkg/enum"
 	"github.com/dollarkillerx/eim/internal/pkg/errs"
@@ -79,7 +81,7 @@ func (r *queryResolver) User(ctx context.Context) (*generated.UserInformation, e
 		Birthday:  us.Birthday,
 		Email:     us.Email,
 		About:     us.About,
-		Avatar:    us.Avatar,
+		Avatar:    fmt.Sprintf("%s/%s", conf.CONFIG.AssetUri, us.Avatar),
 	}, nil
 }
 
@@ -207,13 +209,40 @@ func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode str
 
 // Friendship ...
 func (r *queryResolver) Friendship(ctx context.Context) (*generated.Friendships, error) {
-	//fromContext, err := utils.GetUserInformationFromContext(ctx)
-	//if err != nil {
-	//	return nil, errs.PleaseSignIn
-	//}
-	//
-	//var result generated.Friendships
-	//r.Storage.DB().Model()
+	fromContext, err := utils.GetUserInformationFromContext(ctx)
+	if err != nil {
+		return nil, errs.PleaseSignIn
+	}
 
-	return nil, nil
+	var result generated.Friendships
+
+	sql := `SELECT users.*
+			FROM friendships
+			JOIN users ON users.id = friendships.user1_id  OR users.id = friendships.user2_id 
+			WHERE (friendships.user1_id = ? OR friendships.user2_id = ? )
+			and users.deleted_at is null 
+			and friendships.deleted_at is null group by users.id;
+	`
+
+	var users []models.User
+	err = r.Storage.DB().Raw(sql, fromContext.AccountID, fromContext.AccountID).Scan(&users).Error
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	for _, v := range users {
+		result.Friendships = append(result.Friendships, generated.Friendship{
+			AccountID: v.ID,
+			Account:   v.Account,
+			FullName:  v.FullName,
+			NickName:  v.Nickname,
+			Birthday:  v.Birthday,
+			Email:     v.Email,
+			About:     v.About,
+			Avatar:    fmt.Sprintf("%s/%s", conf.CONFIG.AssetUri, v.Avatar),
+		})
+	}
+
+	return &result, nil
 }
