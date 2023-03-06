@@ -56,6 +56,11 @@ func (r *queryResolver) Captcha(ctx context.Context) (*Captcha, error) {
 	panic("not implemented")
 }
 
+// // foo
+func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode string) (*AuthPayload, error) {
+	panic("not implemented")
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

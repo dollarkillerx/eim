@@ -2,6 +2,7 @@ extend type Query {
     user: UserInformation @hasLogined
     checkSMS(smsId: String!, smsCode: String!): CheckSMS! # 检测code是否正确
     captcha: Captcha
+    userLogin(smsId: String!, smsCode: String!): AuthPayload! # user login
 }
 
 extend type Mutation {

@@ -73,6 +73,7 @@ type ComplexityRoot struct {
 		Healthcheck func(childComplexity int) int
 		Now         func(childComplexity int) int
 		User        func(childComplexity int) int
+		UserLogin   func(childComplexity int, smsID string, smsCode string) int
 	}
 
 	Result struct {
@@ -103,6 +104,7 @@ type QueryResolver interface {
 	User(ctx context.Context) (*UserInformation, error)
 	CheckSms(ctx context.Context, smsID string, smsCode string) (*CheckSms, error)
 	Captcha(ctx context.Context) (*Captcha, error)
+	UserLogin(ctx context.Context, smsID string, smsCode string) (*AuthPayload, error)
 }
 
 type executableSchema struct {
@@ -237,6 +239,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity), true
+
+	case "Query.userLogin":
+		if e.complexity.Query.UserLogin == nil {
+			break
+		}
+
+		args, err := ec.field_Query_userLogin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UserLogin(childComplexity, args["smsId"].(string), args["smsCode"].(string)), true
 
 	case "Result.ok":
 		if e.complexity.Result.Ok == nil {
@@ -391,6 +405,7 @@ scalar Any`, BuiltIn: false},
     user: UserInformation @hasLogined
     checkSMS(smsId: String!, smsCode: String!): CheckSMS! # 检测code是否正确
     captcha: Captcha
+    userLogin(smsId: String!, smsCode: String!): AuthPayload! # user login
 }
 
 extend type Mutation {
@@ -507,6 +522,30 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 }
 
 func (ec *executionContext) field_Query_checkSMS_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["smsId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsId"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["smsId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["smsCode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsCode"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["smsCode"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_userLogin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1253,6 +1292,66 @@ func (ec *executionContext) fieldContext_Query_captcha(ctx context.Context, fiel
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Captcha", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_userLogin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_userLogin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UserLogin(rctx, fc.Args["smsId"].(string), fc.Args["smsCode"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*AuthPayload)
+	fc.Result = res
+	return ec.marshalNAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_userLogin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "accessTokenString":
+				return ec.fieldContext_AuthPayload_accessTokenString(ctx, field)
+			case "userID":
+				return ec.fieldContext_AuthPayload_userID(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_userLogin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -3807,6 +3906,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "userLogin":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_userLogin(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -4249,6 +4368,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNAuthPayload2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v AuthPayload) graphql.Marshaler {
+	return ec._AuthPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *AuthPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AuthPayload(ctx, sel, v)
+}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)

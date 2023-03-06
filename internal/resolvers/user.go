@@ -141,3 +141,48 @@ func (r *mutationResolver) UserRegistration(ctx context.Context, input *generate
 		UserID:            uid,
 	}, nil
 }
+
+// UserLogin ...
+func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode string) (*generated.AuthPayload, error) {
+	// check sms
+	rsms, ex := r.cache.Get(smsID)
+	if !ex {
+		return nil, errs.CaptchaCode
+	}
+	rphome, ex := r.cache.Get(smsCode)
+	if !ex {
+		return nil, errs.CaptchaCode
+	}
+	code := rsms.(string)
+	phoneNumber := rphome.(string)
+
+	if smsCode != code {
+		return nil, errs.CaptchaCode
+	}
+
+	// 查询已有用户
+	var user models.User
+	err := r.Storage.DB().Model(&models.User{}).Where("account = ?", phoneNumber).First(&user).Error
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SqlSystemError(err)
+	}
+
+	token, err := utils.JWT.CreateToken(&enum.AuthJWT{
+		generated.UserInformation{
+			AccountID:   user.ID,
+			Role:        generated.RoleGeneralUser,
+			Account:     phoneNumber,
+			AccountName: user.Nickname,
+		},
+	}, 0)
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SystemError(err)
+	}
+
+	return &generated.AuthPayload{
+		AccessTokenString: token,
+		UserID:            user.ID,
+	}, nil
+}
