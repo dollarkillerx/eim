@@ -6,6 +6,19 @@ extend type Query {
 
 extend type Mutation {
     sendSMS(input: PhoneInput): SMS # send sms
+    userRegistration(input: UserRegistration): AuthPayload # 用户注册
+}
+
+input UserRegistration {
+    fullName: String!
+    nickName: String!
+    birthday: String!
+    email: String!
+    about: String!
+    avatar: String!
+
+    smsId: String!
+    smsCode: String!
 }
 
 input PhoneInput {

@@ -2,12 +2,13 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/dollarkillerx/eim/internal/generated"
+	"github.com/dollarkillerx/eim/internal/pkg/enum"
 	"github.com/dollarkillerx/eim/internal/pkg/errs"
+	"github.com/dollarkillerx/eim/internal/pkg/models"
 	"github.com/dollarkillerx/eim/internal/utils"
 	"github.com/rs/xid"
 )
@@ -24,8 +25,9 @@ func (r *mutationResolver) SendSms(ctx context.Context, input *generated.PhoneIn
 
 	r.cache.Set(smsID, code, time.Second*60)
 	r.cache.Set(input.PhoneNumber, code, time.Second*60)
+	r.cache.Set(code, input.PhoneNumber, time.Second*60)
 
-	log.Printf("SendSMS %s %s \n", input.PhoneNumber, code)
+	log.Printf("SendSMS %s %s %s \n", input.PhoneNumber, code, smsID)
 	return &generated.Sms{
 		SmsID: smsID,
 	}, nil
@@ -41,13 +43,16 @@ func (r *queryResolver) CheckSms(ctx context.Context, smsID string, smsCode stri
 	}
 	code := rc.(string)
 
-	fmt.Printf("%s %s %s %v\n", smsID, smsCode, code, smsCode == code)
-
 	if smsCode != code {
 		return &generated.CheckSms{
 			Ok: false,
 		}, nil
 	}
+
+	r.cache.Set(smsID, code, time.Minute*5)
+	rj, _ := r.cache.Get(code)
+	r.cache.Set(rj.(string), code, time.Minute*5)
+	r.cache.Set(code, rj.(string), time.Minute*5)
 
 	return &generated.CheckSms{
 		Ok: true,
@@ -65,5 +70,74 @@ func (r *queryResolver) User(ctx context.Context) (*generated.UserInformation, e
 		Role:        fromContext.Role,
 		Account:     fromContext.Account,
 		AccountName: fromContext.AccountName,
+	}, nil
+}
+
+// UserRegistration ...
+func (r *mutationResolver) UserRegistration(ctx context.Context, input *generated.UserRegistration) (*generated.AuthPayload, error) {
+	// check sms
+	rsms, ex := r.cache.Get(input.SmsID)
+	if !ex {
+		return nil, errs.CaptchaCode
+	}
+	rphome, ex := r.cache.Get(input.SmsCode)
+	if !ex {
+		return nil, errs.CaptchaCode
+	}
+	code := rsms.(string)
+	phoneNumber := rphome.(string)
+
+	if input.SmsCode != code {
+		return nil, errs.CaptchaCode
+	}
+
+	// 查询已有用户是否存在
+	var exuser int64
+	err := r.Storage.DB().Model(&models.User{}).Where("account = ?", phoneNumber).Count(&exuser).Error
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SqlSystemError(err)
+	}
+
+	if exuser != 0 {
+		log.Println(err)
+		return nil, errs.ExUser
+	}
+
+	// 写
+	uid := xid.New().String()
+	err = r.Storage.DB().Model(&models.User{}).Create(&models.User{
+		BasicModel: models.BasicModel{
+			ID: uid,
+		},
+		Account:  phoneNumber,
+		FullName: input.FullName,
+		Nickname: input.NickName,
+		Birthday: input.Birthday,
+		Email:    input.Email,
+		About:    input.About,
+		Avatar:   input.Avatar,
+	}).Error
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SqlSystemError(err)
+	}
+
+	token, err := utils.JWT.CreateToken(&enum.AuthJWT{
+		generated.UserInformation{
+			AccountID:   uid,
+			Role:        generated.RoleGeneralUser,
+			Account:     phoneNumber,
+			AccountName: input.NickName,
+		},
+	}, 0)
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SystemError(err)
+	}
+
+	return &generated.AuthPayload{
+		AccessTokenString: token,
+		UserID:            uid,
 	}, nil
 }

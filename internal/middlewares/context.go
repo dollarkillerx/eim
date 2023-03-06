@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func Context() func(http.Handler) http.Handler {
 
 			r = r.WithContext(ctx)
 
+			log.Println(r.URL.String())
 			next.ServeHTTP(w, r)
 		})
 	}

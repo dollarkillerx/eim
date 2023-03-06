@@ -61,9 +61,10 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		Healthcheck func(childComplexity int) int
-		SendSms     func(childComplexity int, input *PhoneInput) int
-		UploadFile  func(childComplexity int, file graphql.Upload) int
+		Healthcheck      func(childComplexity int) int
+		SendSms          func(childComplexity int, input *PhoneInput) int
+		UploadFile       func(childComplexity int, file graphql.Upload) int
+		UserRegistration func(childComplexity int, input *UserRegistration) int
 	}
 
 	Query struct {
@@ -72,6 +73,10 @@ type ComplexityRoot struct {
 		Healthcheck func(childComplexity int) int
 		Now         func(childComplexity int) int
 		User        func(childComplexity int) int
+	}
+
+	Result struct {
+		Ok func(childComplexity int) int
 	}
 
 	SMS struct {
@@ -90,6 +95,7 @@ type MutationResolver interface {
 	Healthcheck(ctx context.Context) (string, error)
 	UploadFile(ctx context.Context, file graphql.Upload) (string, error)
 	SendSms(ctx context.Context, input *PhoneInput) (*Sms, error)
+	UserRegistration(ctx context.Context, input *UserRegistration) (*AuthPayload, error)
 }
 type QueryResolver interface {
 	Healthcheck(ctx context.Context) (string, error)
@@ -180,6 +186,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UploadFile(childComplexity, args["file"].(graphql.Upload)), true
 
+	case "Mutation.userRegistration":
+		if e.complexity.Mutation.UserRegistration == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_userRegistration_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UserRegistration(childComplexity, args["input"].(*UserRegistration)), true
+
 	case "Query.captcha":
 		if e.complexity.Query.Captcha == nil {
 			break
@@ -219,6 +237,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity), true
+
+	case "Result.ok":
+		if e.complexity.Result.Ok == nil {
+			break
+		}
+
+		return e.complexity.Result.Ok(childComplexity), true
 
 	case "SMS.smsId":
 		if e.complexity.SMS.SmsID == nil {
@@ -264,6 +289,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputPhoneInput,
+		ec.unmarshalInputUserRegistration,
 	)
 	first := true
 
@@ -343,6 +369,10 @@ type AuthPayload {
     userID: String!
 }
 
+type Result {
+    ok: Boolean!
+}
+
 scalar Upload
 scalar MaybeFloat64
 scalar MaybeFloat32
@@ -365,6 +395,19 @@ scalar Any`, BuiltIn: false},
 
 extend type Mutation {
     sendSMS(input: PhoneInput): SMS # send sms
+    userRegistration(input: UserRegistration): AuthPayload # 用户注册
+}
+
+input UserRegistration {
+    fullName: String!
+    nickName: String!
+    birthday: String!
+    email: String!
+    about: String!
+    avatar: String!
+
+    smsId: String!
+    smsCode: String!
 }
 
 input PhoneInput {
@@ -430,6 +473,21 @@ func (ec *executionContext) field_Mutation_uploadFile_args(ctx context.Context, 
 		}
 	}
 	args["file"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_userRegistration_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *UserRegistration
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOUserRegistration2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserRegistration(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -882,6 +940,63 @@ func (ec *executionContext) fieldContext_Mutation_sendSMS(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_userRegistration(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_userRegistration(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UserRegistration(rctx, fc.Args["input"].(*UserRegistration))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthPayload)
+	fc.Result = res
+	return ec.marshalOAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_userRegistration(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "accessTokenString":
+				return ec.fieldContext_AuthPayload_accessTokenString(ctx, field)
+			case "userID":
+				return ec.fieldContext_AuthPayload_userID(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_userRegistration_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_healthcheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_healthcheck(ctx, field)
 	if err != nil {
@@ -1264,6 +1379,50 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Result_ok(ctx context.Context, field graphql.CollectedField, obj *Result) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Result_ok(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ok, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Result_ok(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Result",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3290,6 +3449,90 @@ func (ec *executionContext) unmarshalInputPhoneInput(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserRegistration(ctx context.Context, obj interface{}) (UserRegistration, error) {
+	var it UserRegistration
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fullName", "nickName", "birthday", "email", "about", "avatar", "smsId", "smsCode"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fullName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fullName"))
+			it.FullName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nickName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nickName"))
+			it.NickName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "birthday":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("birthday"))
+			it.Birthday, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "about":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("about"))
+			it.About, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "avatar":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
+			it.Avatar, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "smsId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsId"))
+			it.SmsID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "smsCode":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("smsCode"))
+			it.SmsCode, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3430,6 +3673,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_sendSMS(ctx, field)
+			})
+
+		case "userRegistration":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_userRegistration(ctx, field)
 			})
 
 		default:
@@ -3575,6 +3824,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		}
 	}
 	out.Dispatch()
+	return out
+}
+
+var resultImplementors = []string{"Result"}
+
+func (ec *executionContext) _Result(ctx context.Context, sel ast.SelectionSet, obj *Result) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Result")
+		case "ok":
+
+			out.Values[i] = ec._Result_ok(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
 	return out
 }
 
@@ -4331,6 +4608,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAuthPayload2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *AuthPayload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4400,6 +4684,14 @@ func (ec *executionContext) marshalOUserInformation2ᚖgithubᚗcomᚋdollarkill
 		return graphql.Null
 	}
 	return ec._UserInformation(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOUserRegistration2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserRegistration(ctx context.Context, v interface{}) (*UserRegistration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUserRegistration(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

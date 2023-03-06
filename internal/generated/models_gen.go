@@ -26,6 +26,10 @@ type PhoneInput struct {
 	PhoneNumber string `json:"phoneNumber"`
 }
 
+type Result struct {
+	Ok bool `json:"ok"`
+}
+
 type Sms struct {
 	SmsID string `json:"smsId"`
 }
@@ -35,6 +39,17 @@ type UserInformation struct {
 	Role        Role   `json:"role"`
 	Account     string `json:"account"`
 	AccountName string `json:"accountName"`
+}
+
+type UserRegistration struct {
+	FullName string `json:"fullName"`
+	NickName string `json:"nickName"`
+	Birthday string `json:"birthday"`
+	Email    string `json:"email"`
+	About    string `json:"about"`
+	Avatar   string `json:"avatar"`
+	SmsID    string `json:"smsId"`
+	SmsCode  string `json:"smsCode"`
 }
 
 type Role string

@@ -27,6 +27,11 @@ func (r *mutationResolver) SendSms(ctx context.Context, input *PhoneInput) (*Sms
 }
 
 // // foo
+func (r *mutationResolver) UserRegistration(ctx context.Context, input *UserRegistration) (*AuthPayload, error) {
+	panic("not implemented")
+}
+
+// // foo
 func (r *queryResolver) Healthcheck(ctx context.Context) (string, error) {
 	panic("not implemented")
 }

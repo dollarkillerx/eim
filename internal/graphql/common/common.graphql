@@ -17,6 +17,10 @@ type AuthPayload {
     userID: String!
 }
 
+type Result {
+    ok: Boolean!
+}
+
 scalar Upload
 scalar MaybeFloat64
 scalar MaybeFloat32
