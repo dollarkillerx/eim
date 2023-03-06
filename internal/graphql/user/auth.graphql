@@ -3,6 +3,22 @@ extend type Query {
     checkSMS(smsId: String!, smsCode: String!): CheckSMS! # 检测code是否正确
     captcha: Captcha
     userLogin(smsId: String!, smsCode: String!): AuthPayload! # user login
+    friendship: Friendships! # 我的朋友
+}
+
+type Friendships {
+    friendships: [Friendships!]!
+}
+
+type Friendship {
+    accountId: String!
+    account: String!
+    fullName: String!
+    nickName: String!
+    birthday: String!
+    email: String!
+    about: String!
+    avatar: String!
 }
 
 extend type Mutation {
@@ -41,9 +57,13 @@ type Captcha {
 
 type UserInformation {
     accountId: String!
-    role: Role!
     account: String!
-    accountName: String!
+    fullName: String!
+    nickName: String!
+    birthday: String!
+    email: String!
+    about: String!
+    avatar: String!
 }
 
 # user roles

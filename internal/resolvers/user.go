@@ -65,11 +65,21 @@ func (r *queryResolver) User(ctx context.Context) (*generated.UserInformation, e
 		return nil, errs.PleaseSignIn
 	}
 
+	var us models.User
+	err = r.Storage.DB().Model(&models.User{}).Where("id = ?", fromContext.AccountID).First(&us).Error
+	if err != nil {
+		return nil, errs.SqlSystemError(err)
+	}
+
 	return &generated.UserInformation{
-		AccountID:   fromContext.AccountID,
-		Role:        fromContext.Role,
-		Account:     fromContext.Account,
-		AccountName: fromContext.AccountName,
+		AccountID: us.ID,
+		Account:   us.Account,
+		FullName:  us.FullName,
+		NickName:  us.Nickname,
+		Birthday:  us.Birthday,
+		Email:     us.Email,
+		About:     us.About,
+		Avatar:    us.Avatar,
 	}, nil
 }
 
@@ -125,10 +135,14 @@ func (r *mutationResolver) UserRegistration(ctx context.Context, input *generate
 
 	token, err := utils.JWT.CreateToken(&enum.AuthJWT{
 		generated.UserInformation{
-			AccountID:   uid,
-			Role:        generated.RoleGeneralUser,
-			Account:     phoneNumber,
-			AccountName: input.NickName,
+			AccountID: uid,
+			Account:   phoneNumber,
+			FullName:  input.FullName,
+			NickName:  input.NickName,
+			Birthday:  input.Birthday,
+			Email:     input.Email,
+			About:     input.About,
+			Avatar:    input.Avatar,
 		},
 	}, 0)
 	if err != nil {
@@ -170,10 +184,14 @@ func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode str
 
 	token, err := utils.JWT.CreateToken(&enum.AuthJWT{
 		generated.UserInformation{
-			AccountID:   user.ID,
-			Role:        generated.RoleGeneralUser,
-			Account:     phoneNumber,
-			AccountName: user.Nickname,
+			AccountID: user.ID,
+			Account:   phoneNumber,
+			FullName:  user.FullName,
+			NickName:  user.Nickname,
+			Birthday:  user.Birthday,
+			Email:     user.Email,
+			About:     user.About,
+			Avatar:    user.Avatar,
 		},
 	}, 0)
 	if err != nil {
@@ -185,4 +203,17 @@ func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode str
 		AccessTokenString: token,
 		UserID:            user.ID,
 	}, nil
+}
+
+// Friendship ...
+func (r *queryResolver) Friendship(ctx context.Context) (*generated.Friendships, error) {
+	//fromContext, err := utils.GetUserInformationFromContext(ctx)
+	//if err != nil {
+	//	return nil, errs.PleaseSignIn
+	//}
+	//
+	//var result generated.Friendships
+	//r.Storage.DB().Model()
+
+	return nil, nil
 }

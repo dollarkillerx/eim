@@ -61,6 +61,11 @@ func (r *queryResolver) UserLogin(ctx context.Context, smsID string, smsCode str
 	panic("not implemented")
 }
 
+// // foo
+func (r *queryResolver) Friendship(ctx context.Context) (*Friendships, error) {
+	panic("not implemented")
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

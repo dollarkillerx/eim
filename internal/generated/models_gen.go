@@ -22,6 +22,21 @@ type CheckSms struct {
 	Ok bool `json:"ok"`
 }
 
+type Friendship struct {
+	AccountID string `json:"accountId"`
+	Account   string `json:"account"`
+	FullName  string `json:"fullName"`
+	NickName  string `json:"nickName"`
+	Birthday  string `json:"birthday"`
+	Email     string `json:"email"`
+	About     string `json:"about"`
+	Avatar    string `json:"avatar"`
+}
+
+type Friendships struct {
+	Friendships []Friendships `json:"friendships"`
+}
+
 type PhoneInput struct {
 	PhoneNumber string `json:"phoneNumber"`
 }
@@ -35,10 +50,14 @@ type Sms struct {
 }
 
 type UserInformation struct {
-	AccountID   string `json:"accountId"`
-	Role        Role   `json:"role"`
-	Account     string `json:"account"`
-	AccountName string `json:"accountName"`
+	AccountID string `json:"accountId"`
+	Account   string `json:"account"`
+	FullName  string `json:"fullName"`
+	NickName  string `json:"nickName"`
+	Birthday  string `json:"birthday"`
+	Email     string `json:"email"`
+	About     string `json:"about"`
+	Avatar    string `json:"avatar"`
 }
 
 type UserRegistration struct {
