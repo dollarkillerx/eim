@@ -4,6 +4,7 @@ extend type Query {
     captcha: Captcha
     userLogin(smsId: String!, smsCode: String!): AuthPayload! # user login
     friendship: Friendships! # 我的朋友
+    searchUser(keyword: String!): SearchUser! # 搜索用户
 }
 
 extend type Mutation {
@@ -58,16 +59,10 @@ enum Role {
 }
 
 type Friendships {
-    friendships: [Friendship!]!
+    friendships: [UserInformation!]!
 }
 
-type Friendship {
-    accountId: String!
-    account: String!
-    fullName: String!
-    nickName: String!
-    birthday: String!
-    email: String!
-    about: String!
-    avatar: String!
+type SearchUser {
+    users: [UserInformation!]!
 }
+

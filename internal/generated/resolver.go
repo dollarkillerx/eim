@@ -66,6 +66,11 @@ func (r *queryResolver) Friendship(ctx context.Context) (*Friendships, error) {
 	panic("not implemented")
 }
 
+// // foo
+func (r *queryResolver) SearchUser(ctx context.Context, keyword string) (*SearchUser, error) {
+	panic("not implemented")
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

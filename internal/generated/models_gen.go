@@ -22,19 +22,8 @@ type CheckSms struct {
 	Ok bool `json:"ok"`
 }
 
-type Friendship struct {
-	AccountID string `json:"accountId"`
-	Account   string `json:"account"`
-	FullName  string `json:"fullName"`
-	NickName  string `json:"nickName"`
-	Birthday  string `json:"birthday"`
-	Email     string `json:"email"`
-	About     string `json:"about"`
-	Avatar    string `json:"avatar"`
-}
-
 type Friendships struct {
-	Friendships []Friendship `json:"friendships"`
+	Friendships []UserInformation `json:"friendships"`
 }
 
 type PhoneInput struct {
@@ -47,6 +36,10 @@ type Result struct {
 
 type Sms struct {
 	SmsID string `json:"smsId"`
+}
+
+type SearchUser struct {
+	Users []UserInformation `json:"users"`
 }
 
 type UserInformation struct {

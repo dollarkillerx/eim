@@ -60,17 +60,6 @@ type ComplexityRoot struct {
 		Ok func(childComplexity int) int
 	}
 
-	Friendship struct {
-		About     func(childComplexity int) int
-		Account   func(childComplexity int) int
-		AccountID func(childComplexity int) int
-		Avatar    func(childComplexity int) int
-		Birthday  func(childComplexity int) int
-		Email     func(childComplexity int) int
-		FullName  func(childComplexity int) int
-		NickName  func(childComplexity int) int
-	}
-
 	Friendships struct {
 		Friendships func(childComplexity int) int
 	}
@@ -88,6 +77,7 @@ type ComplexityRoot struct {
 		Friendship  func(childComplexity int) int
 		Healthcheck func(childComplexity int) int
 		Now         func(childComplexity int) int
+		SearchUser  func(childComplexity int, keyword string) int
 		User        func(childComplexity int) int
 		UserLogin   func(childComplexity int, smsID string, smsCode string) int
 	}
@@ -98,6 +88,10 @@ type ComplexityRoot struct {
 
 	SMS struct {
 		SmsID func(childComplexity int) int
+	}
+
+	SearchUser struct {
+		Users func(childComplexity int) int
 	}
 
 	UserInformation struct {
@@ -126,6 +120,7 @@ type QueryResolver interface {
 	Captcha(ctx context.Context) (*Captcha, error)
 	UserLogin(ctx context.Context, smsID string, smsCode string) (*AuthPayload, error)
 	Friendship(ctx context.Context) (*Friendships, error)
+	SearchUser(ctx context.Context, keyword string) (*SearchUser, error)
 }
 
 type executableSchema struct {
@@ -177,62 +172,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CheckSMS.Ok(childComplexity), true
-
-	case "Friendship.about":
-		if e.complexity.Friendship.About == nil {
-			break
-		}
-
-		return e.complexity.Friendship.About(childComplexity), true
-
-	case "Friendship.account":
-		if e.complexity.Friendship.Account == nil {
-			break
-		}
-
-		return e.complexity.Friendship.Account(childComplexity), true
-
-	case "Friendship.accountId":
-		if e.complexity.Friendship.AccountID == nil {
-			break
-		}
-
-		return e.complexity.Friendship.AccountID(childComplexity), true
-
-	case "Friendship.avatar":
-		if e.complexity.Friendship.Avatar == nil {
-			break
-		}
-
-		return e.complexity.Friendship.Avatar(childComplexity), true
-
-	case "Friendship.birthday":
-		if e.complexity.Friendship.Birthday == nil {
-			break
-		}
-
-		return e.complexity.Friendship.Birthday(childComplexity), true
-
-	case "Friendship.email":
-		if e.complexity.Friendship.Email == nil {
-			break
-		}
-
-		return e.complexity.Friendship.Email(childComplexity), true
-
-	case "Friendship.fullName":
-		if e.complexity.Friendship.FullName == nil {
-			break
-		}
-
-		return e.complexity.Friendship.FullName(childComplexity), true
-
-	case "Friendship.nickName":
-		if e.complexity.Friendship.NickName == nil {
-			break
-		}
-
-		return e.complexity.Friendship.NickName(childComplexity), true
 
 	case "Friendships.friendships":
 		if e.complexity.Friendships.Friendships == nil {
@@ -324,6 +263,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Now(childComplexity), true
 
+	case "Query.searchUser":
+		if e.complexity.Query.SearchUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchUser(childComplexity, args["keyword"].(string)), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -356,6 +307,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SMS.SmsID(childComplexity), true
+
+	case "SearchUser.users":
+		if e.complexity.SearchUser.Users == nil {
+			break
+		}
+
+		return e.complexity.SearchUser.Users(childComplexity), true
 
 	case "UserInformation.about":
 		if e.complexity.UserInformation.About == nil {
@@ -526,21 +484,7 @@ scalar Any`, BuiltIn: false},
     captcha: Captcha
     userLogin(smsId: String!, smsCode: String!): AuthPayload! # user login
     friendship: Friendships! # 我的朋友
-}
-
-type Friendships {
-    friendships: [Friendship!]!
-}
-
-type Friendship {
-    accountId: String!
-    account: String!
-    fullName: String!
-    nickName: String!
-    birthday: String!
-    email: String!
-    about: String!
-    avatar: String!
+    searchUser(keyword: String!): SearchUser! # 搜索用户
 }
 
 extend type Mutation {
@@ -592,7 +536,17 @@ type UserInformation {
 enum Role {
     GeneralUser
     Admin
-}`, BuiltIn: false},
+}
+
+type Friendships {
+    friendships: [UserInformation!]!
+}
+
+type SearchUser {
+    users: [UserInformation!]!
+}
+
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -681,6 +635,21 @@ func (ec *executionContext) field_Query_checkSMS_args(ctx context.Context, rawAr
 		}
 	}
 	args["smsCode"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["keyword"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyword"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["keyword"] = arg0
 	return args, nil
 }
 
@@ -966,358 +935,6 @@ func (ec *executionContext) fieldContext_CheckSMS_ok(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Friendship_accountId(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_accountId(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.AccountID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_accountId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_account(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_account(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Account, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_account(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_fullName(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_fullName(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FullName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_fullName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_nickName(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_nickName(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NickName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_nickName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_birthday(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_birthday(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Birthday, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_birthday(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_email(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_email(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_email(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_about(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_about(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.About, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_about(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Friendship_avatar(ctx context.Context, field graphql.CollectedField, obj *Friendship) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Friendship_avatar(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Avatar, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Friendship_avatar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Friendship",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Friendships_friendships(ctx context.Context, field graphql.CollectedField, obj *Friendships) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Friendships_friendships(ctx, field)
 	if err != nil {
@@ -1344,9 +961,9 @@ func (ec *executionContext) _Friendships_friendships(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]Friendship)
+	res := resTmp.([]UserInformation)
 	fc.Result = res
-	return ec.marshalNFriendship2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserInformation2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserInformationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Friendships_friendships(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1358,23 +975,23 @@ func (ec *executionContext) fieldContext_Friendships_friendships(ctx context.Con
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "accountId":
-				return ec.fieldContext_Friendship_accountId(ctx, field)
+				return ec.fieldContext_UserInformation_accountId(ctx, field)
 			case "account":
-				return ec.fieldContext_Friendship_account(ctx, field)
+				return ec.fieldContext_UserInformation_account(ctx, field)
 			case "fullName":
-				return ec.fieldContext_Friendship_fullName(ctx, field)
+				return ec.fieldContext_UserInformation_fullName(ctx, field)
 			case "nickName":
-				return ec.fieldContext_Friendship_nickName(ctx, field)
+				return ec.fieldContext_UserInformation_nickName(ctx, field)
 			case "birthday":
-				return ec.fieldContext_Friendship_birthday(ctx, field)
+				return ec.fieldContext_UserInformation_birthday(ctx, field)
 			case "email":
-				return ec.fieldContext_Friendship_email(ctx, field)
+				return ec.fieldContext_UserInformation_email(ctx, field)
 			case "about":
-				return ec.fieldContext_Friendship_about(ctx, field)
+				return ec.fieldContext_UserInformation_about(ctx, field)
 			case "avatar":
-				return ec.fieldContext_Friendship_avatar(ctx, field)
+				return ec.fieldContext_UserInformation_avatar(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Friendship", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type UserInformation", field.Name)
 		},
 	}
 	return fc, nil
@@ -1964,6 +1581,64 @@ func (ec *executionContext) fieldContext_Query_friendship(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_searchUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchUser(rctx, fc.Args["keyword"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*SearchUser)
+	fc.Result = res
+	return ec.marshalNSearchUser2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐSearchUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "users":
+				return ec.fieldContext_SearchUser_users(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SearchUser", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -2174,6 +1849,68 @@ func (ec *executionContext) fieldContext_SMS_smsId(ctx context.Context, field gr
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchUser_users(ctx context.Context, field graphql.CollectedField, obj *SearchUser) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchUser_users(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Users, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]UserInformation)
+	fc.Result = res
+	return ec.marshalNUserInformation2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserInformationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchUser_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchUser",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "accountId":
+				return ec.fieldContext_UserInformation_accountId(ctx, field)
+			case "account":
+				return ec.fieldContext_UserInformation_account(ctx, field)
+			case "fullName":
+				return ec.fieldContext_UserInformation_fullName(ctx, field)
+			case "nickName":
+				return ec.fieldContext_UserInformation_nickName(ctx, field)
+			case "birthday":
+				return ec.fieldContext_UserInformation_birthday(ctx, field)
+			case "email":
+				return ec.fieldContext_UserInformation_email(ctx, field)
+			case "about":
+				return ec.fieldContext_UserInformation_about(ctx, field)
+			case "avatar":
+				return ec.fieldContext_UserInformation_avatar(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserInformation", field.Name)
 		},
 	}
 	return fc, nil
@@ -4522,83 +4259,6 @@ func (ec *executionContext) _CheckSMS(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var friendshipImplementors = []string{"Friendship"}
-
-func (ec *executionContext) _Friendship(ctx context.Context, sel ast.SelectionSet, obj *Friendship) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, friendshipImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Friendship")
-		case "accountId":
-
-			out.Values[i] = ec._Friendship_accountId(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "account":
-
-			out.Values[i] = ec._Friendship_account(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "fullName":
-
-			out.Values[i] = ec._Friendship_fullName(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "nickName":
-
-			out.Values[i] = ec._Friendship_nickName(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "birthday":
-
-			out.Values[i] = ec._Friendship_birthday(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "email":
-
-			out.Values[i] = ec._Friendship_email(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "about":
-
-			out.Values[i] = ec._Friendship_about(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "avatar":
-
-			out.Values[i] = ec._Friendship_avatar(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var friendshipsImplementors = []string{"Friendships"}
 
 func (ec *executionContext) _Friendships(ctx context.Context, sel ast.SelectionSet, obj *Friendships) graphql.Marshaler {
@@ -4835,6 +4495,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "searchUser":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchUser(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -4896,6 +4576,34 @@ func (ec *executionContext) _SMS(ctx context.Context, sel ast.SelectionSet, obj 
 		case "smsId":
 
 			out.Values[i] = ec._SMS_smsId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var searchUserImplementors = []string{"SearchUser"}
+
+func (ec *executionContext) _SearchUser(ctx context.Context, sel ast.SelectionSet, obj *SearchUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, searchUserImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SearchUser")
+		case "users":
+
+			out.Values[i] = ec._SearchUser_users(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -5349,54 +5057,6 @@ func (ec *executionContext) marshalNCheckSMS2ᚖgithubᚗcomᚋdollarkillerxᚋe
 	return ec._CheckSMS(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNFriendship2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendship(ctx context.Context, sel ast.SelectionSet, v Friendship) graphql.Marshaler {
-	return ec._Friendship(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNFriendship2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendshipᚄ(ctx context.Context, sel ast.SelectionSet, v []Friendship) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNFriendship2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendship(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNFriendships2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐFriendships(ctx context.Context, sel ast.SelectionSet, v Friendships) graphql.Marshaler {
 	return ec._Friendships(ctx, sel, &v)
 }
@@ -5409,6 +5069,20 @@ func (ec *executionContext) marshalNFriendships2ᚖgithubᚗcomᚋdollarkillerx�
 		return graphql.Null
 	}
 	return ec._Friendships(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSearchUser2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐSearchUser(ctx context.Context, sel ast.SelectionSet, v SearchUser) graphql.Marshaler {
+	return ec._SearchUser(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSearchUser2ᚖgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐSearchUser(ctx context.Context, sel ast.SelectionSet, v *SearchUser) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchUser(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -5475,6 +5149,54 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUserInformation2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserInformation(ctx context.Context, sel ast.SelectionSet, v UserInformation) graphql.Marshaler {
+	return ec._UserInformation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserInformation2ᚕgithubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserInformationᚄ(ctx context.Context, sel ast.SelectionSet, v []UserInformation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserInformation2githubᚗcomᚋdollarkillerxᚋeimᚋinternalᚋgeneratedᚐUserInformation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

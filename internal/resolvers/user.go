@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dollarkillerx/eim/internal/conf"
@@ -228,11 +229,46 @@ func (r *queryResolver) Friendship(ctx context.Context) (*generated.Friendships,
 	err = r.Storage.DB().Raw(sql, fromContext.AccountID, fromContext.AccountID).Scan(&users).Error
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return nil, errs.SqlSystemError(err)
 	}
 
 	for _, v := range users {
-		result.Friendships = append(result.Friendships, generated.Friendship{
+		result.Friendships = append(result.Friendships, generated.UserInformation{
+			AccountID: v.ID,
+			Account:   v.Account,
+			FullName:  v.FullName,
+			NickName:  v.Nickname,
+			Birthday:  v.Birthday,
+			Email:     v.Email,
+			About:     v.About,
+			Avatar:    fmt.Sprintf("%s/%s", conf.CONFIG.AssetUri, v.Avatar),
+		})
+	}
+
+	return &result, nil
+}
+
+// SearchUser ...
+func (r *queryResolver) SearchUser(ctx context.Context, keyword string) (*generated.SearchUser, error) {
+	var result generated.SearchUser
+
+	keyword = strings.TrimSpace(keyword)
+	if keyword == "" {
+		return &result, nil
+	}
+
+	sql := `SELECT id, created_at, updated_at, deleted_at, account, full_name, nickname, birthday, email, about, "password", avatar
+FROM public.users where account  like ? or email like ?;`
+
+	var users []models.User
+	err := r.Storage.DB().Raw(sql, "%"+keyword+"%", "%"+keyword+"%").Scan(&users).Error
+	if err != nil {
+		log.Println(err)
+		return nil, errs.SqlSystemError(err)
+	}
+
+	for _, v := range users {
+		result.Users = append(result.Users, generated.UserInformation{
 			AccountID: v.ID,
 			Account:   v.Account,
 			FullName:  v.FullName,
